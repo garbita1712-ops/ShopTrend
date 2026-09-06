@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
-import { Edit2, Trash2, X, Check } from 'lucide-react';
+import { Edit2, Trash2, X, Check, Upload } from 'lucide-react';
 import { Product } from '../ProductCard';
 
 interface CatalogManagerProps {
@@ -23,6 +23,7 @@ export default function CatalogManager({
   const [editStock, setEditStock] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editImage, setEditImage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
@@ -32,6 +33,36 @@ export default function CatalogManager({
     setEditStock(product.stock.toString());
     setEditDescription(product.description || '');
     setEditImage(product.image);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const toastId = toast.loading('Uploading image to Cloudinary...');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data && data.url) {
+        setEditImage(data.url);
+        toast.success('Image uploaded to Cloudinary!', { id: toastId });
+      } else {
+        toast.error('Image upload failed', { id: toastId });
+      }
+    } catch (err) {
+      toast.error('Error uploading image', { id: toastId });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleUpdateProduct = async (e: React.FormEvent) => {
@@ -209,15 +240,27 @@ export default function CatalogManager({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Image URL</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Upload File (Cloudinary)</label>
                   <input
-                    type="text"
-                    value={editImage}
-                    onChange={(e) => setEditImage(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-slate-400"
-                    required
+                    type="file"
+                    accept="image/*"
+                    disabled={isUploading}
+                    onChange={handleFileUpload}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 text-[10px] focus:outline-none cursor-pointer"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Image URL</label>
+                <input
+                  type="text"
+                  value={editImage}
+                  onChange={(e) => setEditImage(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-slate-400 font-mono text-[11px]"
+                  placeholder="https://res.cloudinary.com/... (or uploaded above)"
+                  required
+                />
               </div>
 
               <div>
@@ -240,7 +283,8 @@ export default function CatalogManager({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 flex items-center gap-1"
+                  disabled={isUploading}
+                  className="px-4 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 flex items-center gap-1 cursor-pointer disabled:opacity-50"
                 >
                   <Check className="w-3.5 h-3.5" /> Save Changes
                 </button>

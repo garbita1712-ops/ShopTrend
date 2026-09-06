@@ -12,6 +12,7 @@ export async function GET() {
       id: doc._id.toString(),
       name: doc.name,
       category: doc.category,
+      subcategory: doc.subcategory || '',
       price: doc.price,
       rating: doc.rating,
       reviews: doc.reviews,
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
     const newProduct = await ProductModel.create({
       name: body.name || 'New Catalog Item',
       category: body.category || 'Electronics',
+      subcategory: body.subcategory || '',
       price: parseFloat(body.price) || 99.99,
       rating: 5.0,
       reviews: 1,
@@ -48,6 +50,7 @@ export async function POST(req: Request) {
       id: newProduct._id.toString(),
       name: newProduct.name,
       category: newProduct.category,
+      subcategory: newProduct.subcategory || '',
       price: newProduct.price,
       rating: newProduct.rating,
       reviews: newProduct.reviews,
@@ -64,7 +67,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const { id, name, category, price, stock, description, image } = body;
+    const { id, name, category, subcategory, price, stock, description, image } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Product ID required for update' }, { status: 400 });
@@ -76,6 +79,7 @@ export async function PUT(req: Request) {
       {
         name,
         category,
+        subcategory: subcategory || '',
         price: parseFloat(price),
         stock: parseInt(stock),
         description,
@@ -92,6 +96,7 @@ export async function PUT(req: Request) {
       id: updated._id.toString(),
       name: updated.name,
       category: updated.category,
+      subcategory: updated.subcategory || '',
       price: updated.price,
       rating: updated.rating,
       reviews: updated.reviews,

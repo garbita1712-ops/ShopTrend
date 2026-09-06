@@ -1,9 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Edit2, Trash2, X, Check, Upload } from 'lucide-react';
+import { Edit2, Trash2, X, Check } from 'lucide-react';
 import { Product } from '../ProductCard';
+
+interface Subcategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface CategoryItem {
+  id: string;
+  name: string;
+  slug: string;
+  subcategories: Subcategory[];
+}
 
 interface CatalogManagerProps {
   products: Product[];
@@ -19,20 +32,56 @@ export default function CatalogManager({
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState('');
+  const [editSubcategory, setEditSubcategory] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editStock, setEditStock] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editImage, setEditImage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
+  const [availableCategories, setAvailableCategories] = useState<CategoryItem[]>([]);
+  const [activeSubcategories, setActiveSubcategories] = useState<Subcategory[]>([]);
+
+  useEffect(() => {
+    fetch('/api/admin/categories')
+      .then((res) => res.json())
+      .then((data: CategoryItem[]) => {
+        if (Array.isArray(data)) {
+          setAvailableCategories(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
     setEditName(product.name);
     setEditCategory(product.category);
+    setEditSubcategory(product.subcategory || '');
     setEditPrice(product.price.toString());
     setEditStock(product.stock.toString());
     setEditDescription(product.description || '');
     setEditImage(product.image);
+
+    // Populate active subcategories for selected category
+    const foundCat = availableCategories.find((c) => c.name === product.category);
+    if (foundCat && foundCat.subcategories && foundCat.subcategories.length > 0) {
+      setActiveSubcategories(foundCat.subcategories);
+    } else {
+      setActiveSubcategories([]);
+    }
+  };
+
+  const handleEditCategoryChange = (catName: string) => {
+    setEditCategory(catName);
+    const foundCat = availableCategories.find((c) => c.name === catName);
+    if (foundCat && foundCat.subcategories && foundCat.subcategories.length > 0) {
+      setActiveSubcategories(foundCat.subcategories);
+      setEditSubcategory(foundCat.subcategories[0].name);
+    } else {
+      setActiveSubcategories([]);
+      setEditSubcategory('');
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,6 +127,7 @@ export default function CatalogManager({
           id: editingProduct.id,
           name: editName,
           category: editCategory,
+          subcategory: editSubcategory,
           price: editPrice,
           stock: editStock,
           description: editDescription,
@@ -144,7 +194,7 @@ export default function CatalogManager({
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xs font-bold text-slate-900 truncate">{item.name}</h3>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    <span className="font-mono font-bold text-slate-900">${item.price.toFixed(2)}</span> · Stock: <span className="font-semibold text-slate-700">{item.stock}</span> · Category: <span className="font-medium text-slate-600">{item.category}</span>
+                    <span className="font-mono font-bold text-slate-900">${item.price.toFixed(2)}</span> · Stock: <span className="font-semibold text-slate-700">{item.stock}</span> · Category: <span className="font-medium text-slate-600">{item.category}{item.subcategory ? ` (${item.subcategory})` : ''}</span>
                   </p>
                 </div>
               </div>
@@ -202,18 +252,61 @@ export default function CatalogManager({
                 />
               </div>
 
+              {/* Category & Subcategory Row */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Category</label>
-                  <input
-                    type="text"
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-slate-400"
-                    required
-                  />
+                  {availableCategories.length > 0 ? (
+                    <select
+                      value={editCategory}
+                      onChange={(e) => handleEditCategoryChange(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-slate-400 font-medium"
+                    >
+                      {availableCategories.map((cat) => (
+                        <option key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={editCategory}
+                      onChange={(e) => setEditCategory(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-slate-400"
+                      required
+                    />
+                  )}
                 </div>
 
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Subcategory</label>
+                  {activeSubcategories.length > 0 ? (
+                    <select
+                      value={editSubcategory}
+                      onChange={(e) => setEditSubcategory(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-slate-400 font-medium"
+                    >
+                      {activeSubcategories.map((sub) => (
+                        <option key={sub.id} value={sub.name}>
+                          {sub.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="Subcategory"
+                      value={editSubcategory}
+                      onChange={(e) => setEditSubcategory(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-slate-400"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Price & Stock Row */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Price ($)</label>
                   <input
@@ -225,9 +318,7 @@ export default function CatalogManager({
                     required
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Stock Quantity</label>
                   <input
@@ -238,17 +329,18 @@ export default function CatalogManager({
                     required
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Upload File (Cloudinary)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={isUploading}
-                    onChange={handleFileUpload}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 text-[10px] focus:outline-none cursor-pointer"
-                  />
-                </div>
+              {/* Cloudinary File Upload Input */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Upload File (Cloudinary)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={isUploading}
+                  onChange={handleFileUpload}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 text-[10px] focus:outline-none cursor-pointer"
+                />
               </div>
 
               <div>

@@ -61,6 +61,50 @@ export async function POST(req: Request) {
   }
 }
 
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, name, category, price, stock, description, image } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Product ID required for update' }, { status: 400 });
+    }
+
+    await connectToDatabase();
+    const updated = await ProductModel.findByIdAndUpdate(
+      id,
+      {
+        name,
+        category,
+        price: parseFloat(price),
+        stock: parseInt(stock),
+        description,
+        image,
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      id: updated._id.toString(),
+      name: updated.name,
+      category: updated.category,
+      price: updated.price,
+      rating: updated.rating,
+      reviews: updated.reviews,
+      image: updated.image,
+      description: updated.description,
+      stock: updated.stock,
+      isNew: updated.isNewItem,
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);

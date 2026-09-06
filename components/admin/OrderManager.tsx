@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 
 export interface OrderRecord {
   _id: string;
@@ -55,6 +56,26 @@ export default function OrderManager({ orders, isLoading, onRefreshNeeded }: Ord
     }
   };
 
+  const handleDeleteOrder = async (orderId: string, refName: string) => {
+    if (!confirm(`Are you sure you want to delete order #${refName}?`)) return;
+
+    const toastId = toast.loading('Deleting order record...');
+    try {
+      const res = await fetch(`/api/admin/orders?id=${orderId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Order record deleted', { id: toastId });
+        onRefreshNeeded();
+      } else {
+        toast.error(data.error || 'Could not delete order', { id: toastId });
+      }
+    } catch (e) {
+      toast.error('Error connecting to server', { id: toastId });
+    }
+  };
+
   return (
     <div className="bg-white p-5 rounded border border-slate-200">
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
@@ -87,58 +108,74 @@ export default function OrderManager({ orders, isLoading, onRefreshNeeded }: Ord
                 <th className="py-2.5 px-3">Items Purchased</th>
                 <th className="py-2.5 px-3">Total ($)</th>
                 <th className="py-2.5 px-3">Fulfillment Status</th>
+                <th className="py-2.5 px-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {orders.map((order) => (
-                <tr key={order._id} className="hover:bg-slate-50">
-                  <td className="py-3 px-3">
-                    <p className="font-mono font-bold text-slate-900 text-[11px] truncate max-w-[110px]" title={order._id}>
-                      #{order._id.substring(order._id.length - 8)}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      {new Date(order.createdAt).toLocaleDateString()}
-                    </p>
-                  </td>
+              {orders.map((order) => {
+                const shortRef = order._id.substring(order._id.length - 8);
 
-                  <td className="py-3 px-3">
-                    <p className="font-bold text-slate-900">{order.customerName}</p>
-                    <p className="text-[10px] text-slate-500">{order.customerEmail}</p>
-                  </td>
+                return (
+                  <tr key={order._id} className="hover:bg-slate-50">
+                    <td className="py-3 px-3">
+                      <p className="font-mono font-bold text-slate-900 text-[11px] truncate max-w-[110px]" title={order._id}>
+                        #{shortRef}
+                      </p>
+                      <p className="text-[10px] text-slate-400">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </p>
+                    </td>
 
-                  <td className="py-3 px-3 text-[11px] text-slate-600 max-w-[160px] truncate" title={`${order.shippingAddress}, ${order.city}`}>
-                    {order.shippingAddress}, {order.city}
-                  </td>
+                    <td className="py-3 px-3">
+                      <p className="font-bold text-slate-900">{order.customerName}</p>
+                      <p className="text-[10px] text-slate-500">{order.customerEmail}</p>
+                    </td>
 
-                  <td className="py-3 px-3">
-                    <p className="font-medium text-slate-800">
-                      {order.items?.length || 0} item(s)
-                    </p>
-                    <p className="text-[10px] text-slate-500 truncate max-w-[140px]">
-                      {order.items?.map((i) => `${i.name} (x${i.quantity})`).join(', ')}
-                    </p>
-                  </td>
+                    <td className="py-3 px-3 text-[11px] text-slate-600 max-w-[160px] truncate" title={`${order.shippingAddress}, ${order.city}`}>
+                      {order.shippingAddress}, {order.city}
+                    </td>
 
-                  <td className="py-3 px-3 font-bold text-slate-900">
-                    ${order.totalAmount?.toFixed(2)}
-                  </td>
+                    <td className="py-3 px-3">
+                      <p className="font-medium text-slate-800">
+                        {order.items?.length || 0} item(s)
+                      </p>
+                      <p className="text-[10px] text-slate-500 truncate max-w-[140px]">
+                        {order.items?.map((i) => `${i.name} (x${i.quantity})`).join(', ')}
+                      </p>
+                    </td>
 
-                  <td className="py-3 px-3">
-                    <select
-                      value={order.status}
-                      disabled={updatingId === order._id}
-                      onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                      className="px-2.5 py-1 rounded text-xs font-semibold border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-slate-500 cursor-pointer"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Processing">Processing</option>
-                      <option value="Shipped">Shipped</option>
-                      <option value="Delivered">Delivered</option>
-                      <option value="Cancelled">Cancelled</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
+                    <td className="py-3 px-3 font-bold text-slate-900">
+                      ${order.totalAmount?.toFixed(2)}
+                    </td>
+
+                    <td className="py-3 px-3">
+                      <select
+                        value={order.status}
+                        disabled={updatingId === order._id}
+                        onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                        className="px-2.5 py-1 rounded text-xs font-semibold border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-slate-500 cursor-pointer"
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Processing">Processing</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </td>
+
+                    <td className="py-3 px-3 text-right">
+                      <button
+                        onClick={() => handleDeleteOrder(order._id, shortRef)}
+                        className="p-1.5 rounded border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-800 transition-all cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold"
+                        title="Delete Order"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

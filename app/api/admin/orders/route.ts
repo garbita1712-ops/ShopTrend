@@ -36,3 +36,21 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Order ID required' }, { status: 400 });
+    }
+
+    await connectToDatabase();
+    await Order.findByIdAndDelete(id);
+
+    return NextResponse.json({ success: true, id });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

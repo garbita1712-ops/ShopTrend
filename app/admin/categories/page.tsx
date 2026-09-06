@@ -145,7 +145,9 @@ export default function AdminCategoriesPage() {
   };
 
   const handleDeleteCategory = async (id: string, name: string) => {
-    const toastId = toast.loading('Deleting...');
+    if (!confirm(`Are you sure you want to delete category "${name}"?`)) return;
+
+    const toastId = toast.loading('Deleting category...');
     try {
       await fetch(`/api/admin/categories?id=${id}`, { method: 'DELETE' });
       toast.success(`Category deleted`, { id: toastId });
@@ -156,7 +158,7 @@ export default function AdminCategoriesPage() {
   };
 
   const handleDeleteSubcategory = async (catId: string, subId: string) => {
-    const toastId = toast.loading('Deleting...');
+    const toastId = toast.loading('Deleting subcategory...');
     try {
       await fetch(`/api/admin/categories?id=${catId}&subId=${subId}`, { method: 'DELETE' });
       toast.success(`Subcategory deleted`, { id: toastId });
@@ -272,7 +274,7 @@ export default function AdminCategoriesPage() {
                     <h3 className="text-sm font-bold text-slate-900">{cat.name}</h3>
                     <button
                       onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                      className="text-xs text-rose-600 hover:text-rose-800 font-semibold transition-all cursor-pointer"
+                      className="text-xs text-slate-900 hover:text-black font-semibold transition-all cursor-pointer hover:underline"
                     >
                       Delete
                     </button>
@@ -291,7 +293,7 @@ export default function AdminCategoriesPage() {
                           <span>{sub.name}</span>
                           <button
                             onClick={() => handleDeleteSubcategory(cat.id, sub.id)}
-                            className="text-slate-400 hover:text-rose-600 font-bold ml-1"
+                            className="text-slate-400 hover:text-slate-900 font-bold ml-1 cursor-pointer"
                             title="Remove subcategory"
                           >
                             ×

@@ -148,9 +148,7 @@ export default function CatalogManager({
   };
 
   const handleDeleteProduct = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
-
-    const toastId = toast.loading('Deleting product...');
+    const toastId = toast.loading(`Deleting ${name}...`);
     try {
       const res = await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
       if (res.ok) {

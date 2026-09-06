@@ -57,15 +57,13 @@ export default function OrderManager({ orders, isLoading, onRefreshNeeded }: Ord
   };
 
   const handleDeleteOrder = async (orderId: string, refName: string) => {
-    if (!confirm(`Are you sure you want to delete order #${refName}?`)) return;
-
-    const toastId = toast.loading('Deleting order record...');
+    const toastId = toast.loading(`Deleting order #${refName}...`);
     try {
       const res = await fetch(`/api/admin/orders?id=${orderId}`, {
         method: 'DELETE',
       });
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (res.ok) {
         toast.success('Order record deleted', { id: toastId });
         onRefreshNeeded();
       } else {

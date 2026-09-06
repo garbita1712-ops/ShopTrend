@@ -23,9 +23,7 @@ export default function UserManager({
   onRefreshNeeded,
 }: UserManagerProps) {
   const handleDeleteUser = async (id: string, email: string) => {
-    if (!confirm(`Are you sure you want to delete user account "${email}"?`)) return;
-
-    const toastId = toast.loading('Deleting user...');
+    const toastId = toast.loading(`Deleting account ${email}...`);
     try {
       await fetch(`/api/admin/users/manage?id=${id}`, { method: 'DELETE' });
       toast.success(`User ${email} deleted`, { id: toastId });

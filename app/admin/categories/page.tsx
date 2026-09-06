@@ -145,9 +145,7 @@ export default function AdminCategoriesPage() {
   };
 
   const handleDeleteCategory = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete category "${name}"?`)) return;
-
-    const toastId = toast.loading('Deleting category...');
+    const toastId = toast.loading(`Deleting category ${name}...`);
     try {
       await fetch(`/api/admin/categories?id=${id}`, { method: 'DELETE' });
       toast.success(`Category deleted`, { id: toastId });

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import ProductModel from '@/models/Product';
+import crypto from 'crypto';
 
 export async function GET() {
   try {
@@ -119,9 +120,51 @@ export async function DELETE(req: Request) {
     }
 
     await connectToDatabase();
+    const product = await ProductModel.findById(id);
+
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    // If product image is hosted on Cloudinary, delete image asset from Cloudinary
+    if (product.image && product.image.includes('cloudinary.com')) {
+      try {
+        const urlParts = product.image.split('/upload/');
+        if (urlParts.length > 1) {
+          let pathAfterUpload = urlParts[1];
+          // Strip version prefix e.g. v1725528859/
+          pathAfterUpload = pathAfterUpload.replace(/^v\d+\//, '');
+          // Strip extension e.g. .jpg, .png, .jpeg, .webp
+          const publicId = pathAfterUpload.replace(/\.[^/.]+$/, '');
+
+          const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'x5yt3kmf';
+          const apiKey = process.env.CLOUDINARY_API_KEY || '418773947296572';
+          const apiSecret = process.env.CLOUDINARY_API_SECRET || 't9fy1FLeENxp3Iv7ltBLSi8oWJs';
+
+          const timestamp = Math.floor(Date.now() / 1000).toString();
+          const strToSign = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+          const signature = crypto.createHash('sha1').update(strToSign).digest('hex');
+
+          const formData = new FormData();
+          formData.append('public_id', publicId);
+          formData.append('api_key', apiKey);
+          formData.append('timestamp', timestamp);
+          formData.append('signature', signature);
+
+          await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+            method: 'POST',
+            body: formData,
+          });
+        }
+      } catch (cloudErr) {
+        console.error('Failed to delete Cloudinary image:', cloudErr);
+      }
+    }
+
+    // Delete product document from MongoDB
     await ProductModel.findByIdAndDelete(id);
 
-    return NextResponse.json({ message: 'Product deleted from MongoDB', id });
+    return NextResponse.json({ message: 'Product and Cloudinary asset deleted', id });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

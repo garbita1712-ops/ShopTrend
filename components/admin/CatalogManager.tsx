@@ -118,23 +118,23 @@ export default function CatalogManager({
                 </div>
               </div>
 
-              {/* Action Buttons: Edit & Delete */}
+              {/* Action Buttons: Edit & Delete (Monochrome Black/Slate) */}
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => openEditModal(item)}
                   className="px-2.5 py-1 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-800 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
                   title="Edit Product"
                 >
-                  <Edit2 className="w-3 h-3 text-slate-600" />
+                  <Edit2 className="w-3 h-3 text-slate-700" />
                   <span>Edit</span>
                 </button>
 
                 <button
                   onClick={() => handleDeleteProduct(item.id, item.name)}
-                  className="px-2.5 py-1 rounded border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-800 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                  className="px-2.5 py-1 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-900 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
                   title="Delete Product"
                 >
-                  <Trash2 className="w-3 h-3 text-rose-600" />
+                  <Trash2 className="w-3 h-3 text-slate-700" />
                   <span>Delete</span>
                 </button>
               </div>

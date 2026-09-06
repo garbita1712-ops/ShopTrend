@@ -23,6 +23,8 @@ export default function UserManager({
   onRefreshNeeded,
 }: UserManagerProps) {
   const handleDeleteUser = async (id: string, email: string) => {
+    if (!confirm(`Are you sure you want to delete user account "${email}"?`)) return;
+
     const toastId = toast.loading('Deleting user...');
     try {
       await fetch(`/api/admin/users/manage?id=${id}`, { method: 'DELETE' });
@@ -97,7 +99,7 @@ export default function UserManager({
 
                 <button
                   onClick={() => handleDeleteUser(usr.id, usr.email)}
-                  className="text-xs text-rose-600 hover:text-rose-800 font-semibold transition-all cursor-pointer"
+                  className="text-xs text-slate-900 hover:text-black font-semibold transition-all cursor-pointer underline"
                 >
                   Delete
                 </button>

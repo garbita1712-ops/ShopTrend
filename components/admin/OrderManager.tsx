@@ -166,10 +166,10 @@ export default function OrderManager({ orders, isLoading, onRefreshNeeded }: Ord
                     <td className="py-3 px-3 text-right">
                       <button
                         onClick={() => handleDeleteOrder(order._id, shortRef)}
-                        className="p-1.5 rounded border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-800 transition-all cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold"
+                        className="p-1.5 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-900 transition-all cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold"
                         title="Delete Order"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3.5 h-3.5 text-slate-700" />
                         <span>Delete</span>
                       </button>
                     </td>

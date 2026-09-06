@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     // Query user in MongoDB database
     const user = await User.findOne({ email: email.trim().toLowerCase() });
 
-    if (!user) {
+    if (!user || !user.password) {
       return NextResponse.json(
         { error: 'No account found with this email address.' },
         { status: 404 }

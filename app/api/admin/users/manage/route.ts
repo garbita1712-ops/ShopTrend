@@ -31,6 +31,10 @@ export async function PATCH(req: Request) {
     await connectToDatabase();
     const updated = await User.findByIdAndUpdate(id, { role }, { new: true });
 
+    if (!updated) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
     return NextResponse.json({
       message: 'User role updated successfully',
       user: {

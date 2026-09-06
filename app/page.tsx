@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+export const dynamic = 'force-dynamic';
+
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import HeroBanner from '../components/HeroBanner';
 import CategoryFilter from '../components/CategoryFilter';
@@ -9,7 +11,7 @@ import CartDrawer from '../components/CartDrawer';
 import AdminUploadModal from '../components/AdminUploadModal';
 import { Product } from '../components/ProductCard';
 
-export default function ShopTrendHome() {
+function ShopTrendContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -206,5 +208,13 @@ export default function ShopTrendHome() {
         deleteProduct={deleteProduct}
       />
     </main>
+  );
+}
+
+export default function ShopTrendHome() {
+  return (
+    <Suspense fallback={<div className="py-16 text-center text-xs text-slate-400">Loading catalog...</div>}>
+      <ShopTrendContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import ProductModel from '@/models/Product';
+import mongoose from 'mongoose';
 import crypto from 'crypto';
 
 export async function GET() {
@@ -75,19 +76,39 @@ export async function PUT(req: Request) {
     }
 
     await connectToDatabase();
-    const updated = await ProductModel.findByIdAndUpdate(
-      id,
-      {
-        name,
-        category,
-        subcategory: subcategory || '',
-        price: parseFloat(price),
-        stock: parseInt(stock),
-        description,
-        image,
-      },
-      { new: true }
-    );
+    let updated = null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      updated = await ProductModel.findByIdAndUpdate(
+        id,
+        {
+          name,
+          category,
+          subcategory: subcategory || '',
+          price: parseFloat(price),
+          stock: parseInt(stock),
+          description,
+          image,
+        },
+        { new: true }
+      );
+    }
+
+    if (!updated) {
+      updated = await ProductModel.findOneAndUpdate(
+        { $or: [{ id: id }, { _id: id }] },
+        {
+          name,
+          category,
+          subcategory: subcategory || '',
+          price: parseFloat(price),
+          stock: parseInt(stock),
+          description,
+          image,
+        },
+        { new: true }
+      );
+    }
 
     if (!updated) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
@@ -120,21 +141,22 @@ export async function DELETE(req: Request) {
     }
 
     await connectToDatabase();
-    const product = await ProductModel.findById(id);
-
+    
+    // Find product using ObjectId or custom String ID safely
+    let product = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      product = await ProductModel.findById(id);
+    }
     if (!product) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      product = await ProductModel.findOne({ $or: [{ id: id }, { _id: id }] });
     }
 
-    // If product image is hosted on Cloudinary, delete image asset from Cloudinary
-    if (product.image && product.image.includes('cloudinary.com')) {
+    if (product && product.image && product.image.includes('cloudinary.com')) {
       try {
         const urlParts = product.image.split('/upload/');
         if (urlParts.length > 1) {
           let pathAfterUpload = urlParts[1];
-          // Strip version prefix e.g. v1725528859/
           pathAfterUpload = pathAfterUpload.replace(/^v\d+\//, '');
-          // Strip extension e.g. .jpg, .png, .jpeg, .webp
           const publicId = pathAfterUpload.replace(/\.[^/.]+$/, '');
 
           const cloudName = process.env.CLOUDINARY_CLOUD_NAME || 'x5yt3kmf';
@@ -161,10 +183,13 @@ export async function DELETE(req: Request) {
       }
     }
 
-    // Delete product document from MongoDB
-    await ProductModel.findByIdAndDelete(id);
+    // Delete product document from MongoDB safely
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      await ProductModel.findByIdAndDelete(id);
+    }
+    await ProductModel.deleteOne({ $or: [{ id: id }, { _id: id }] });
 
-    return NextResponse.json({ message: 'Product and Cloudinary asset deleted', id });
+    return NextResponse.json({ message: 'Product deleted successfully', id });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

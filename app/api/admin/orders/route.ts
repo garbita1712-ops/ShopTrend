@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Order from '@/models/Order';
+import mongoose from 'mongoose';
 
 export async function GET() {
   try {
@@ -21,11 +22,22 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'orderId and status are required' }, { status: 400 });
     }
 
-    const updatedOrder = await Order.findByIdAndUpdate(
-      orderId,
-      { status },
-      { new: true }
-    );
+    let updatedOrder = null;
+    if (mongoose.Types.ObjectId.isValid(orderId)) {
+      updatedOrder = await Order.findByIdAndUpdate(
+        orderId,
+        { status },
+        { new: true }
+      );
+    }
+
+    if (!updatedOrder) {
+      updatedOrder = await Order.findOneAndUpdate(
+        { $or: [{ id: orderId }, { _id: orderId }, { orderId: orderId }] },
+        { status },
+        { new: true }
+      );
+    }
 
     if (!updatedOrder) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -47,7 +59,11 @@ export async function DELETE(req: Request) {
     }
 
     await connectToDatabase();
-    await Order.findByIdAndDelete(id);
+    
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      await Order.findByIdAndDelete(id);
+    }
+    await Order.deleteOne({ $or: [{ id: id }, { _id: id }, { orderId: id }] });
 
     return NextResponse.json({ success: true, id });
   } catch (error: any) {

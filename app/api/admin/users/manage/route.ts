@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/models/User';
+import mongoose from 'mongoose';
 
 export async function DELETE(req: Request) {
   try {
@@ -12,7 +13,11 @@ export async function DELETE(req: Request) {
     }
 
     await connectToDatabase();
-    await User.findByIdAndDelete(id);
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      await User.findByIdAndDelete(id);
+    }
+    await User.deleteOne({ $or: [{ id: id }, { _id: id }] });
 
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error: any) {
@@ -29,7 +34,14 @@ export async function PATCH(req: Request) {
     }
 
     await connectToDatabase();
-    const updated = await User.findByIdAndUpdate(id, { role }, { new: true });
+    let updated = null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      updated = await User.findByIdAndUpdate(id, { role }, { new: true });
+    }
+    if (!updated) {
+      updated = await User.findOneAndUpdate({ $or: [{ id: id }, { _id: id }] }, { role }, { new: true });
+    }
 
     if (!updated) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

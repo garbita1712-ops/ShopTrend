@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Category from '@/models/Category';
+import mongoose from 'mongoose';
 
 export async function GET() {
   try {
@@ -68,7 +69,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Parent Category ID is required for subcategory' }, { status: 400 });
       }
 
-      const category = await Category.findById(parentCategoryId);
+      let category = null;
+      if (mongoose.Types.ObjectId.isValid(parentCategoryId)) {
+        category = await Category.findById(parentCategoryId);
+      }
+      if (!category) {
+        category = await Category.findOne({ $or: [{ id: parentCategoryId }, { _id: parentCategoryId }] });
+      }
+
       if (!category) {
         return NextResponse.json({ error: 'Parent category not found' }, { status: 404 });
       }
@@ -131,17 +139,29 @@ export async function DELETE(req: Request) {
 
     await connectToDatabase();
 
+    let category = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      category = await Category.findById(id);
+    }
+    if (!category) {
+      category = await Category.findOne({ $or: [{ id: id }, { _id: id }] });
+    }
+
     if (subId) {
       // Delete subcategory from parent
-      const category = await Category.findById(id);
       if (category) {
-        category.subcategories = category.subcategories.filter((s: any) => s.id !== subId);
+        category.subcategories = (category.subcategories || []).filter(
+          (s: any) => s.id !== subId && s._id?.toString() !== subId
+        );
         await category.save();
       }
       return NextResponse.json({ message: 'Subcategory removed successfully' });
     } else {
       // Delete entire main category
-      await Category.findByIdAndDelete(id);
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        await Category.findByIdAndDelete(id);
+      }
+      await Category.deleteOne({ $or: [{ id: id }, { _id: id }] });
       return NextResponse.json({ message: 'Category deleted successfully' });
     }
   } catch (error: any) {
